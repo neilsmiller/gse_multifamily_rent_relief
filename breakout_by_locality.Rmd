@@ -1,0 +1,185 @@
+---
+title: "Tens of millions of renters may be protected from eviction by FHFA guidelines"
+author: "Neil Miller"
+date: "3/29/2020"
+output: html_document
+---
+
+# Introduction
+
+On March 23, the Federal Housing Finance Administration (FHFA) [announced](https://www.fhfa.gov/Media/PublicAffairs/Pages/FHFA-Moves-to-Provide-Eviction-Suspension-Relief-for-Renters-in-Multifamily-Properties.aspx "FHFA announcement") its plans to protect tenants unable to pay rent due to the impact of coronavirus. According to the FHFA announcement, Fannie Mae and Freddie Mac "will offer multifamily property owners mortgage forbearance with the condition that they suspend all evictions for renters" impacted by COVID. See related [Fannie Mae](https://www.fanniemae.com/portal/media/corporate-news/2020/renters-covid-19-multifamily-7002.html "Fannie Mae announcement") and [Freddie Mac](https://freddiemac.gcs-web.com/news-releases/news-release-details/freddie-mac-announces-nationwide-covid-19-relief-plan-affecting?_ga=2.225978650.1404074070.1584967133-539932648.1574371834&_gl=1*16ulw6a*_gcl_aw*R0NMLjE1ODEwMTg1MzcuRUFJYUlRb2JDaE1JenFhUmdObTk1d0lWQ3NESUNoME02QVE2RUFBWUFTQUFFZ0ktT19EX0J3RQ..*_gcl_dc*R0NMLjE1ODEwMTg1MzcuRUFJYUlRb2JDaE1JenFhUmdObTk1d0lWQ3NESUNoME02QVE2RUFBWUFTQUFFZ0ktT19EX0J3RQ.. "Freddie Mac announcement") press releases.
+
+Going by the numbers in these releases, and by the calculations below, forebearance may be available for more than 50,000 multifamily rental housing properties across the country, covering as many as 10,000,000 units of housing. Roughly 90% of Fannie Mae and Freddie Mac's activity in financing multifamily housing supports properties intended for tenants whose income is at or less than their area's median income, so these 10,000,000 units of housing will disproportionately be occupied by low- or moderate-income households.
+
+Eviction protection would be a weight off the shoulders of tens of millions of Americans, in all 50 states. By relieving tenants of the necessity to leave their homes to go to work, freedom from eviction would slow the spread of COVID-19 and save countless lives. But for the transformative potential of these protections to take realized, and with the urgency necessary to fight a virus, several obstacles must be overcome:
+
+1. Landlords must know about the opportunity for forebearance **and choose to pursue it**, instead of attempting to collect rent as normal in trying to make their mortgage payments
+2. Tenants must be able to find out:
+  i) if the property they live in have loans owned Fannie Mae or Freddie Mac, and whether these loans are eligible for forebearance
+  ii) if their landlord has applied for or recieved forebearance, in which case the landlord's ability to evict would be limited
+3. Tenants and communities must be able to identify properties eligible for and recieving forebearance, in order to:
+  i) organize to encourage landlords to take advantage of these programs and suspend evictions
+  ii) monitor whether evictions --- and undue pressure being applied to tenents to make rent --- are in fact being suspended.
+  
+I'm asking for your help in getting the word out, to landlords, community leaders, and (most of all) tenants about these protections.
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(plotly)
+
+format_num <- function(x){
+  formatted <- formatC(x, big.mark = ",", format = "d")
+  return(formatted)
+}
+```
+
+```{r load, include=FALSE}
+# fannie_mae <- read.csv('FNMA_MF_Loan_Performance_Data_201909.csv')
+# freddie_mac <- read.delim('MLPD2018q4_complete.txt', header = TRUE, sep = "|", dec = ".")
+
+fannie_mae_unique <- readRDS("fannie_mae_unique.rds")
+freddie_mac_unique <- readRDS("freddie_mac_unique.rds")
+```
+
+```{r fanniemae, include=FALSE}
+
+# fannie_mae$Maturity.Date.at.Acquisition <- as.Date(fannie_mae$Maturity.Date.at.Acquisition)
+# fannie_mae$Maturity.Date...Current <- as.Date(fannie_mae$Maturity.Date...Current)
+# fannie_mae$Reporting.Period.Date <- as.Date(fannie_mae$Reporting.Period.Date)
+# fannie_mae <- filter(fannie_mae, Maturity.Date...Current > Sys.Date())
+
+```
+
+```{r exploreFNMA, include=FALSE}
+# n_distinct(fannie_mae$Loan.Number)
+# 
+# fannie_mae_unique <- fannie_mae %>%
+#   group_by(Loan.Number) %>%
+#   arrange(Reporting.Period.Date) %>%
+#   filter(row_number() == n()) %>%
+#   ungroup()
+# saveRDS(fannie_mae_unique, "fannie_mae_unique.rds")
+
+fnma_loan_total <- nrow(fannie_mae_unique)
+fnma_unit_total <- sum(fannie_mae_unique$Property.Acquisition.Total.Unit.Count, na.rm = TRUE)
+
+fannie_mae_state <- fannie_mae_unique %>%
+  group_by(Property.State) %>%
+  summarise(
+    ct_loans = n(),
+    ct_units = sum(Property.Acquisition.Total.Unit.Count)
+  ) %>%
+  arrange(desc(ct_units))
+
+fannie_mae_MSA <- fannie_mae_unique %>%
+  group_by(Metropolitan.Statistical.Area) %>%
+  summarise(
+    ct_loans = n(),
+    ct_units = sum(Property.Acquisition.Total.Unit.Count)
+  ) %>%
+  arrange(desc(ct_units))
+
+fannie_mae_city <- fannie_mae_unique %>%
+  group_by(Property.State, Property.City) %>%
+  summarise(
+    ct_loans = n(),
+    ct_units = sum(Property.Acquisition.Total.Unit.Count)
+  ) %>%
+  arrange(desc(ct_units))
+```
+
+```{r freddiemac, include=FALSE}
+
+# n_distinct(freddie_mac$lnno)
+# 
+# freddie_mac$dt_mty <- as.Date(freddie_mac$dt_mty, format = "%d%b%Y")
+# freddie_mac_unique <- freddie_mac %>%
+#   group_by(lnno) %>%
+#   arrange(quarter2) %>%
+#   filter(row_number() == n()) %>%
+#   ungroup()
+# 
+# nrow(freddie_mac_unique)
+# 
+# saveRDS(freddie_mac_unique, "freddie_mac_unique.rds")
+
+freddie_mac_unique %>%
+  filter(dt_mty > Sys.Date()) %>%
+  nrow()
+
+fmcc_loan_total <- nrow(freddie_mac_unique)
+
+```
+
+```{r exploreFMCC, include=FALSE}
+freddie_mac_state <- freddie_mac_unique %>%
+  group_by(code_st) %>%
+  summarise(
+    ct_loans = n(),
+  ) %>%
+  arrange(desc(ct_loans))
+
+```
+
+## Number of units and loans
+
+There are roughly **`r format_num(fnma_loan_total)`** active loans that are owned by Fannie Mae, covering more than **`r format_num(fnma_unit_total)`** units across the country. There are **`r format_num(fmcc_loan_total)`** active Freddie Mac loans. As the average Fannie Mae loan contains `r format_num(fnma_unit_total / fnma_loan_total)` units, we can estimate that Freddie Mac policies may potentially impact **`r format_num((fnma_unit_total / fnma_loan_total) * fmcc_loan_total)`** units. Adding Fannie Mae and Freddie Mac units together, this suggests that as many as **`r format_num(((fnma_unit_total / fnma_loan_total) * fmcc_loan_total) + fnma_unit_total)`** units may be impacted.
+
+From the plot below, we see that Texas has the most units that may be affected by Fannie Mae guidelines, over **900,000**. California has the most outstanding multifamily loans from Fannie Mae, **4,783**.
+
+```{r plotfnmastates, echo=FALSE, warning=FALSE}
+# from https://plotly.com/r/choropleth-maps/
+
+fannie_mae_state$hover <- with(fannie_mae_state, paste(Property.State, '<br>',
+                                                         'Number of loans:', ct_loans, '<br>',
+                                                         'Number of units:', ct_units))
+
+# give state boundaries a white border
+l <- list(color = toRGB("white"), width = 2)
+# specify some map projection/options
+g <- list(
+  scope = 'usa',
+  projection = list(type = 'albers usa'),
+  showlakes = TRUE,
+  lakecolor = toRGB('white')
+)
+
+fig_fnma <- plot_geo(fannie_mae_state, locationmode = 'USA-states')
+fig_fnma <- fig_fnma  %>% add_trace(
+  z = ~ct_units, text = ~hover, locations = ~Property.State,
+  color = ~ct_units, colors = "Purples"
+)
+fig_fnma <- fig_fnma %>% colorbar("Number of units")
+fig_fnma <- fig_fnma %>% layout(
+ title = 'Number of units in Fannie Mae loans',
+ geo = g
+)
+
+fig_fnma
+```
+
+Freddie Mac's loan dataset doesn't report the number of units in each property, so the graph below only looks at how many *loans* are in each state. As with Freddie Mac, California has the most loans, for **4,087** properties, with Texas just behind.
+
+```{r plotfmccstates, echo=FALSE}
+# from https://plotly.com/r/choropleth-maps/
+
+freddie_mac_state$hover <- with(freddie_mac_state, paste(code_st, '<br>',
+                                                         'Number of loans:', ct_loans))
+
+fig_fmcc <- plot_geo(freddie_mac_state, locationmode = 'USA-states')
+fig_fmcc <- fig_fmcc  %>% add_trace(
+  z = ~ct_loans, text = ~hover, locations = ~code_st,
+  color = ~ct_loans, colors = "Purples"
+)
+fig_fmcc <- fig_fmcc %>% colorbar("Number of units")
+fig_fmcc <- fig_fmcc %>% layout(
+ title = 'Number of active multifamily Freddie Mac loans',
+ geo = g
+)
+
+fig_fmcc
+```
+
